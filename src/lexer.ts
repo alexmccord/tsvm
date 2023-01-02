@@ -15,10 +15,6 @@ type Digits = "0" | "1" | "2" | "3" | "4" | "5" | "6" | "7" | "8" | "9";
 
 type Keywords = 'if' | 'then' | 'else' | 'true' | 'false' | 'let';
 
-// We need to split them based on length of the operators because we have order-sensitive branching below.
-type TwoCharOperators = '==';
-type OneCharOperators = '.' | '=' | '(' | ')';
-
 // Some identifiers are in fact keywords, e.g. `if`, `true`, but not others e.g. `true0` or `if5`.
 type TokenizeIdentifier<I extends string, Rest extends string> =
     | Rest extends `${infer L extends Alphabet | Digits | '_'}${infer Rest}` ? TokenizeIdentifier<`${I}${L}`, Rest>

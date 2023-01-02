@@ -1,12 +1,10 @@
-import { AstBooleanExpr, AstExpr, AstGroupExpr, AstLetStat, AstStat } from "./ast";
-import { Identifier, Keyword, Lexeme, Operator, Tokenize } from "./lexer"
+import { AstBooleanExpr, AstExpr, AstLetStat, AstStat } from "./ast";
+import { Lexeme, Tokenize } from "./lexer"
+import { ExtractBooleanExpression, ExtractLetStatement } from "./syntax";
 
 type ParseExpression<Lexemes extends Lexeme[]> =
-    | Lexemes extends [Keyword<`${infer B extends boolean}`>, ...infer Rest extends Lexeme[]] ? [AstBooleanExpr<B>, Rest]
+    | Lexemes extends ExtractBooleanExpression<infer B, infer Rest> ? [AstBooleanExpr<B>, Rest]
     : never;
-
-type ExtractLetStatement<N extends string, Rest extends Lexeme[]> =
-    | [Keyword<"let">, Identifier<N>, Operator<"=">, ...Rest];
 
 type ParseLetStatement<N extends string, Lexemes extends Lexeme[]> =
     | ParseExpression<Lexemes> extends [infer E extends AstExpr, infer Rest extends Lexeme[]]
