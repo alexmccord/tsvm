@@ -1,9 +1,15 @@
-import { AstBooleanExpr, AstExpr, AstLetStat, AstStat } from "./ast";
+import { AstBooleanExpr, AstExpr, AstGroupExpr, AstLetStat, AstStat } from "./ast";
 import { Lexeme, Tokenize } from "./lexer"
-import { BooleanExpressionSyntax, LetStatementSyntax } from "./syntax";
+import { BooleanExpressionSyntax, BeginGroupExpressionSyntax, LetStatementSyntax, EndGroupExpressionSyntax } from "./syntax";
+
+type ParseGroupExpression<Lexemes extends Lexeme[]> =
+    | ParseExpression<Lexemes> extends [infer E extends AstExpr, EndGroupExpressionSyntax<infer Rest>]
+        ? [AstGroupExpr<E>, Rest]
+        : never;
 
 type ParseExpression<Lexemes extends Lexeme[]> =
     | Lexemes extends BooleanExpressionSyntax<infer B, infer Rest> ? [AstBooleanExpr<B>, Rest]
+    : Lexemes extends BeginGroupExpressionSyntax<infer Rest> ? ParseGroupExpression<Rest>
     : never;
 
 type ParseLetStatement<N extends string, Lexemes extends Lexeme[]> =
