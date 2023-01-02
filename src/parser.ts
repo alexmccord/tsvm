@@ -1,9 +1,9 @@
 import { AstBooleanExpr, AstExpr, AstLetStat, AstStat } from "./ast";
 import { Lexeme, Tokenize } from "./lexer"
-import { ExtractBooleanExpression, ExtractLetStatement } from "./syntax";
+import { BooleanExpressionSyntax, LetStatementSyntax } from "./syntax";
 
 type ParseExpression<Lexemes extends Lexeme[]> =
-    | Lexemes extends ExtractBooleanExpression<infer B, infer Rest> ? [AstBooleanExpr<B>, Rest]
+    | Lexemes extends BooleanExpressionSyntax<infer B, infer Rest> ? [AstBooleanExpr<B>, Rest]
     : never;
 
 type ParseLetStatement<N extends string, Lexemes extends Lexeme[]> =
@@ -12,7 +12,7 @@ type ParseLetStatement<N extends string, Lexemes extends Lexeme[]> =
         : never;
 
 type ParseStatement<Lexemes extends Lexeme[]> =
-    | Lexemes extends ExtractLetStatement<infer N, infer Rest> ? ParseLetStatement<N, Rest>
+    | Lexemes extends LetStatementSyntax<infer N, infer Rest> ? ParseLetStatement<N, Rest>
     : never;
 
 type ParseBlock<Lexemes extends Lexeme[], ParsedStats extends AstStat[] = []> =
