@@ -1,4 +1,4 @@
-type TaggedValue<Tag extends string, D> = { tag: Tag, value: D };
+type TaggedValue<T extends string, D> = { tag: T, value: D };
 
 export type NumberValue<V extends number> = TaggedValue<"number", V>;
 export type BooleanValue<V extends boolean> = TaggedValue<"boolean", V>;
