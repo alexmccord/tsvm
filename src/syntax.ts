@@ -6,6 +6,12 @@ export type BeginGroupExpressionSyntax<Rest extends Lexeme[]> =
     | [Operator<"(">, ...Rest];
 export type EndGroupExpressionSyntax<Rest extends Lexeme[]> =
     | [Operator<")">, ...Rest];
+export type IfExpressionCond<Rest extends Lexeme[]> =
+    | [Keyword<"if">, ...Rest];
+export type IfExpressionThen<Rest extends Lexeme[]> =
+    | [Keyword<"then">, ...Rest];
+export type IfExpressionElse<Rest extends Lexeme[]> =
+    | [Keyword<"else">, ...Rest];
 
 export type LetStatementSyntax<N extends string, Rest extends Lexeme[]> =
     | [Keyword<"let">, Identifier<N>, Operator<"=">, ...Rest];
