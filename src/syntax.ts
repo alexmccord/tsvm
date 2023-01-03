@@ -1,5 +1,7 @@
-import { Lexeme, Keyword, Identifier, Operator, Num } from "./lexer";
+import { Lexeme, Keyword, Identifier, Operator, Num, Str } from "./lexer";
 
+export type StringExpressionSyntax<S extends string, Rest extends Lexeme[]> =
+    | [Str<S>, ...Rest];
 export type BooleanExpressionSyntax<B extends boolean, Rest extends Lexeme[]> =
     | [Keyword<`${B}`>, ...Rest];
 export type NumberExpressionSyntax<N extends number, Rest extends Lexeme[]> =

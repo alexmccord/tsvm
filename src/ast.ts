@@ -7,6 +7,7 @@ export type AstNode = AstExpr | AstStat;
 export type AstExpr = { tag: "expr" };
 export type AstStat = { tag: "stat" };
 
+export type AstStringExpr<S extends string> = TaggedAstExpr<"string", { value: S }>;
 export type AstBooleanExpr<B extends boolean> = TaggedAstExpr<"boolean", { value: B }>;
 export type AstNumberExpr<N extends number> = TaggedAstExpr<"number", { value: N }>;
 export type AstGroupExpr<N extends AstExpr> = TaggedAstExpr<"group", { node: N }>
