@@ -21,7 +21,6 @@ type ParseGroupExpression<Lexemes extends Lexeme[]> =
 
 // TODO: rewrite this one to be cleaner when possible
 type ParseIfExpression<Lexemes extends Lexeme[]> =
-    // | MatchParseOrReport<ParseExpression<Lexemes>, IfExpressionThen<>, Err<"expected `then`">> extends
     | ParseExpression<Lexemes> extends infer R1 extends ResultConstraint
         ? R1 extends Ok<infer C extends AstExpr, IfExpressionThen<infer Rest>>
             ? ParseExpression<Rest> extends infer R2 extends ResultConstraint
@@ -93,5 +92,3 @@ export type Parse<S extends string> =
         : R extends Ice<infer E> ? `Internal error: ${E}`
         : "Internal error: Parse match is inexhaustive"
     : "Internal error: ParseStatements should return a subtype of ResultConstraint";
-
-type T = Parse<"{ let x = true let y = { let z = true } }">;
