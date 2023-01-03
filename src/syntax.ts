@@ -1,7 +1,11 @@
-import { Lexeme, Keyword, Identifier, Operator } from "./lexer";
+import { Lexeme, Keyword, Identifier, Operator, Num } from "./lexer";
 
 export type BooleanExpressionSyntax<B extends boolean, Rest extends Lexeme[]> =
     | [Keyword<`${B}`>, ...Rest];
+export type NumberExpressionSyntax<N extends number, Rest extends Lexeme[]> =
+    | [Num<N>, ...Rest];
+export type IndentifierSyntax<N extends string, Rest extends Lexeme[]> =
+    | [Identifier<N>, ...Rest];
 
 export type BeginGroupExpressionSyntax<Rest extends Lexeme[]> =
     | [Operator<"(">, ...Rest];
@@ -19,9 +23,6 @@ export type BeginBlockSyntax<Rest extends Lexeme[]> =
     | [Operator<"{">, ...Rest];
 export type EndBlockSyntax<Rest extends Lexeme[]> =
     | [Operator<"}">, ...Rest];
-
-export type IndentifierSyntax<N extends string, Rest extends Lexeme[]> =
-    | [Identifier<N>, ...Rest];
 
 export type LetStatementSyntax<Rest extends Lexeme[]> =
     | [Keyword<"let">, ...Rest];

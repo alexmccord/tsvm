@@ -1,6 +1,6 @@
-import { AstBlock, AstBooleanExpr, AstExpr, AstExprStat, AstGroupExpr, AstIdentifierExpr, AstIfExpr, AstLetStat, AstNode, AstNopStatement, AstReturnStat, AstStat } from "./ast";
+import { AstBlock, AstBooleanExpr, AstExpr, AstExprStat, AstGroupExpr, AstIdentifierExpr, AstIfExpr, AstLetStat, AstNode, AstNopStatement, AstNumberExpr, AstReturnStat, AstStat } from "./ast";
 import { Eof, Lexeme, Tokenize } from "./lexer"
-import { BooleanExpressionSyntax, BeginGroupExpressionSyntax, EndGroupExpressionSyntax, IfExpressionCond, IfExpressionThen, IfExpressionElse, BeginBlockSyntax, EndBlockSyntax, LetStatementSyntax, NameOfLetStatementSyntax, InitializerLetStatementSyntax, ReturnStatementSyntax, IndentifierSyntax } from "./syntax";
+import { BooleanExpressionSyntax, BeginGroupExpressionSyntax, EndGroupExpressionSyntax, IfExpressionCond, IfExpressionThen, IfExpressionElse, BeginBlockSyntax, EndBlockSyntax, LetStatementSyntax, NameOfLetStatementSyntax, InitializerLetStatementSyntax, ReturnStatementSyntax, IndentifierSyntax, NumberExpressionSyntax } from "./syntax";
 
 type Ok<N extends AstNode | AstNode[], Lexemes extends Lexeme[]> = { tag: "ok", node: N, lexemes: Lexemes };
 type Err<E extends string> = { tag: "err", err: E };
@@ -45,10 +45,11 @@ type ParseBlockExpression<Lexemes extends Lexeme[]> =
 
 type ParseExpression<Lexemes extends Lexeme[]> =
     | Lexemes extends BooleanExpressionSyntax<infer B, infer Rest> ? Ok<AstBooleanExpr<B>, Rest>
+    : Lexemes extends NumberExpressionSyntax<infer N, infer Rest> ? Ok<AstNumberExpr<N>, Rest>
+    : Lexemes extends IndentifierSyntax<infer N, infer Rest> ? Ok<AstIdentifierExpr<N>, Rest>
     : Lexemes extends BeginGroupExpressionSyntax<infer Rest> ? ParseGroupExpression<Rest>
     : Lexemes extends IfExpressionCond<infer Rest> ? ParseIfExpression<Rest>
     : Lexemes extends BeginBlockSyntax<infer Rest> ? ParseBlockExpression<Rest>
-    : Lexemes extends IndentifierSyntax<infer N, infer Rest> ? Ok<AstIdentifierExpr<N>, Rest>
     : Lexemes extends [Eof] ? Err<"expected an expression, got end of file">
     : Err<`expected an expression, got '${Lexemes[0]["value"]}'`>;
 
