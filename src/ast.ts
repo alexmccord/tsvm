@@ -16,3 +16,4 @@ export type AstBlock<S extends AstStat[]> = TaggedAstExpr<"block", { stats: S }>
 export type AstNopStatement = TaggedAstStat<"nop", null>;
 export type AstLetStat<N extends string, E extends AstExpr> = TaggedAstStat<"let", { name: N, expr: E }>;
 export type AstExprStat<E extends AstExpr> = TaggedAstStat<"expression statement", { expr: E }>;
+export type AstReturnStat<E extends AstExpr> = TaggedAstStat<"return", { ret: E }>;

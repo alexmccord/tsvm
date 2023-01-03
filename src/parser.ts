@@ -1,6 +1,6 @@
-import { AstBlock, AstBooleanExpr, AstExpr, AstExprStat, AstGroupExpr, AstIfExpr, AstLetStat, AstNode, AstNopStatement, AstStat } from "./ast";
-import { Eof, Identifier, Keyword, Lexeme, Operator, Tokenize } from "./lexer"
-import { BooleanExpressionSyntax, BeginGroupExpressionSyntax, EndGroupExpressionSyntax, IfExpressionCond, IfExpressionThen, IfExpressionElse, BeginBlockSyntax, EndBlockSyntax, LetStatementSyntax, NameOfLetStatementSyntax, InitializerLetStatementSyntax } from "./syntax";
+import { AstBlock, AstBooleanExpr, AstExpr, AstExprStat, AstGroupExpr, AstIfExpr, AstLetStat, AstNode, AstNopStatement, AstReturnStat, AstStat } from "./ast";
+import { Eof, Lexeme, Tokenize } from "./lexer"
+import { BooleanExpressionSyntax, BeginGroupExpressionSyntax, EndGroupExpressionSyntax, IfExpressionCond, IfExpressionThen, IfExpressionElse, BeginBlockSyntax, EndBlockSyntax, LetStatementSyntax, NameOfLetStatementSyntax, InitializerLetStatementSyntax, ReturnStatementSyntax } from "./syntax";
 
 type Ok<N extends AstNode | AstNode[], Lexemes extends Lexeme[]> = { tag: "ok", node: N, lexemes: Lexemes };
 type Err<E extends string> = { tag: "err", err: E };
@@ -66,9 +66,16 @@ type ParseBlockStatement<Lexemes extends Lexeme[]> =
         : R
     : Inexhaustive<"ParseBlockStatement">;
 
+type ParseReturnStatement<Lexemes extends Lexeme[]> =
+    | ParseExpression<Lexemes> extends infer R extends ResultConstraint
+        ? R extends Ok<infer E extends AstExpr, infer Rest> ? Ok<AstReturnStat<E>, Rest>
+        : R
+    : Inexhaustive<"ParseReturnStatement">;
+
 type TryParseStatement<Lexemes extends Lexeme[]> =
     | Lexemes extends LetStatementSyntax<infer Rest> ? ParseLetStatement<Rest>
     : Lexemes extends BeginBlockSyntax<infer Rest> ? ParseBlockStatement<Rest>
+    : Lexemes extends ReturnStatementSyntax<infer Rest> ? ParseReturnStatement<Rest>
     : Ok<AstNopStatement, Lexemes>;
 
 type ParseStatement<Lexemes extends Lexeme[]> =
