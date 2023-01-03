@@ -17,5 +17,6 @@ export type GetFrame<VM extends VirtualMachine> = GetPC<VM>["frame"];
 export type Returns = PC<string, number>[];
 export type GetReturns<VM extends VirtualMachine> = VM["returns"];
 
+export type FreshVM = VMState<{}, []>;
 export type VMState<R extends Registers, S extends Stack, J extends PC<string, number> = MainPC, Rets extends Returns = []> = { regs: R, stack: S, pc: J, returns: Rets, };
 export type VirtualMachine = VMState<Registers, Stack, PC<string, number>, Returns>;

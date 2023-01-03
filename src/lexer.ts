@@ -53,13 +53,3 @@ export type Tokenize<S extends string, Acc extends Lexeme[] = []> =
     | TokenizeOne<S> extends infer T extends [Lexeme, string]
         ? S extends "" ? Acc : Tokenize<T[1], [...Acc, T[0]]>
         : never;
-
-type Toks = Tokenize<`
-fn main() {
-    let x = 5
-}
-
-fn hello_world() {
-    return 'hello world!'
-}
-`>;

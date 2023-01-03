@@ -133,16 +133,3 @@ export type Parse<S extends string> =
         : R extends Ice<infer E> ? `Internal error: ${E}`
         : "Internal error: Parse match is inexhaustive"
     : "Internal error: ParseStatements should return a subtype of ResultConstraint";
-
-type T = Parse<`
-    let x = 5
-
-    fn main() {
-        let x = hello_world()
-        return x
-    }
-
-    fn hello_world() {
-        return 'hello world!'
-    }
-`>;
