@@ -1,6 +1,6 @@
-import { AstBlock, AstBooleanExpr, AstExpr, AstExprStat, AstGroupExpr, AstIfExpr, AstLetStat, AstNode, AstNopStatement, AstReturnStat, AstStat } from "./ast";
+import { AstBlock, AstBooleanExpr, AstExpr, AstExprStat, AstGroupExpr, AstIdentifierExpr, AstIfExpr, AstLetStat, AstNode, AstNopStatement, AstReturnStat, AstStat } from "./ast";
 import { Eof, Lexeme, Tokenize } from "./lexer"
-import { BooleanExpressionSyntax, BeginGroupExpressionSyntax, EndGroupExpressionSyntax, IfExpressionCond, IfExpressionThen, IfExpressionElse, BeginBlockSyntax, EndBlockSyntax, LetStatementSyntax, NameOfLetStatementSyntax, InitializerLetStatementSyntax, ReturnStatementSyntax } from "./syntax";
+import { BooleanExpressionSyntax, BeginGroupExpressionSyntax, EndGroupExpressionSyntax, IfExpressionCond, IfExpressionThen, IfExpressionElse, BeginBlockSyntax, EndBlockSyntax, LetStatementSyntax, NameOfLetStatementSyntax, InitializerLetStatementSyntax, ReturnStatementSyntax, IndentifierSyntax } from "./syntax";
 
 type Ok<N extends AstNode | AstNode[], Lexemes extends Lexeme[]> = { tag: "ok", node: N, lexemes: Lexemes };
 type Err<E extends string> = { tag: "err", err: E };
@@ -48,6 +48,7 @@ type ParseExpression<Lexemes extends Lexeme[]> =
     : Lexemes extends BeginGroupExpressionSyntax<infer Rest> ? ParseGroupExpression<Rest>
     : Lexemes extends IfExpressionCond<infer Rest> ? ParseIfExpression<Rest>
     : Lexemes extends BeginBlockSyntax<infer Rest> ? ParseBlockExpression<Rest>
+    : Lexemes extends IndentifierSyntax<infer N, infer Rest> ? Ok<AstIdentifierExpr<N>, Rest>
     : Lexemes extends [Eof] ? Err<"expected an expression, got end of file">
     : Err<`expected an expression, got '${Lexemes[0]["value"]}'`>;
 

@@ -20,6 +20,9 @@ export type BeginBlockSyntax<Rest extends Lexeme[]> =
 export type EndBlockSyntax<Rest extends Lexeme[]> =
     | [Operator<"}">, ...Rest];
 
+export type IndentifierSyntax<N extends string, Rest extends Lexeme[]> =
+    | [Identifier<N>, ...Rest];
+
 export type LetStatementSyntax<Rest extends Lexeme[]> =
     | [Keyword<"let">, ...Rest];
 export type NameOfLetStatementSyntax<N extends string, Rest extends Lexeme[]> =
