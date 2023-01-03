@@ -6,7 +6,7 @@ export type BooleanExpressionSyntax<B extends boolean, Rest extends Lexeme[]> =
     | [Keyword<`${B}`>, ...Rest];
 export type NumberExpressionSyntax<N extends number, Rest extends Lexeme[]> =
     | [Num<N>, ...Rest];
-export type IndentifierSyntax<N extends string, Rest extends Lexeme[]> =
+export type IdentifierSyntax<N extends string, Rest extends Lexeme[]> =
     | [Identifier<N>, ...Rest];
 
 export type BeginGroupExpressionSyntax<Rest extends Lexeme[]> =
@@ -31,10 +31,12 @@ export type BinaryEqualSyntax<Rest extends Lexeme[]> =
 
 export type LetStatementSyntax<Rest extends Lexeme[]> =
     | [Keyword<"let">, ...Rest];
-export type NameOfLetStatementSyntax<N extends string, Rest extends Lexeme[]> =
-    | [Identifier<N>, ...Rest];
 export type InitializerLetStatementSyntax<Rest extends Lexeme[]> =
     | [Operator<"=">, ...Rest];
 
 export type ReturnStatementSyntax<Rest extends Lexeme[]> =
     | [Keyword<"return">, ...Rest];
+
+// TODO: split this up so that errors in the parser is better
+export type BeginFnStatementSyntax<N extends string, Rest extends Lexeme[]> =
+    | [Keyword<"fn">, Identifier<N>, Operator<"(">, Operator<")">, ...Rest];

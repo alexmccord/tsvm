@@ -17,7 +17,7 @@ type Alphabet =
 type Digits = "0" | "1" | "2" | "3" | "4" | "5" | "6" | "7" | "8" | "9";
 
 type Operators = "=" | "." | "(" | ")" | "{" | "}";
-type Keywords = "if" | "then" | "else" | "true" | "false" | "let" | "return";
+type Keywords = "if" | "then" | "else" | "true" | "false" | "let" | "return" | "fn";
 
 // Some identifiers are in fact keywords, e.g. `if`, `true`, but not others e.g. `true0` or `if5`.
 type TokenizeIdentifier<Acc extends string, Rest extends string> =
@@ -46,9 +46,20 @@ type TokenizeOne<S extends string> =
     : S extends `${infer D extends Digits}${infer Rest}` ? TokenizeNumber<D, Rest>
     : S extends `'${infer Rest}` ? TokenizeString<"", Rest>
     : S extends ` ${infer Rest}` ? TokenizeOne<Rest>
+    : S extends `\n${infer Rest}` ? TokenizeOne<Rest>
     : [Eof, ""];
 
 export type Tokenize<S extends string, Acc extends Lexeme[] = []> =
     | TokenizeOne<S> extends infer T extends [Lexeme, string]
         ? S extends "" ? Acc : Tokenize<T[1], [...Acc, T[0]]>
         : never;
+
+type Toks = Tokenize<`
+fn main() {
+    let x = 5
+}
+
+fn hello_world() {
+    return 'hello world!'
+}
+`>;

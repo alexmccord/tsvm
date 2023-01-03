@@ -1,6 +1,6 @@
-import { AstBinaryEqExpr, AstBlock, AstBooleanExpr, AstExpr, AstExprStat, AstGroupExpr, AstIdentifierExpr, AstIfExpr, AstLetStat, AstNode, AstNopStatement, AstNumberExpr, AstReturnStat, AstStat, AstStringExpr } from "./ast";
-import { Eof, Lexeme, Tokenize } from "./lexer"
-import { BooleanExpressionSyntax, BeginGroupExpressionSyntax, EndGroupExpressionSyntax, IfExpressionCond, IfExpressionThen, IfExpressionElse, BeginBlockSyntax, EndBlockSyntax, LetStatementSyntax, NameOfLetStatementSyntax, InitializerLetStatementSyntax, ReturnStatementSyntax, IndentifierSyntax, NumberExpressionSyntax, StringExpressionSyntax, BinaryEqualSyntax } from "./syntax";
+import { AstBinaryEqExpr, AstBlock, AstBooleanExpr, AstExpr, AstExprStat, AstFnCall, AstFnStat, AstGroupExpr, AstIdentifierExpr, AstIfExpr, AstLetStat, AstNode, AstNopStatement, AstNumberExpr, AstReturnStat, AstStat, AstStringExpr } from "./ast";
+import { Eof, Identifier, Lexeme, Operator, Tokenize } from "./lexer"
+import { BooleanExpressionSyntax, BeginGroupExpressionSyntax, EndGroupExpressionSyntax, IfExpressionCond, IfExpressionThen, IfExpressionElse, BeginBlockSyntax, EndBlockSyntax, LetStatementSyntax, InitializerLetStatementSyntax, ReturnStatementSyntax, IdentifierSyntax as IdentifierSyntax, NumberExpressionSyntax, StringExpressionSyntax, BinaryEqualSyntax, BeginFnStatementSyntax } from "./syntax";
 
 type Ok<N extends AstNode | AstNode[], Lexemes extends Lexeme[]> = { tag: "ok", node: N, lexemes: Lexemes };
 type Err<E extends string> = { tag: "err", err: E };
@@ -40,14 +40,22 @@ type ParseBlockExpression<Lexemes extends Lexeme[]> =
     | Lexemes extends EndBlockSyntax<infer Rest> ? Ok<AstBlock<[]>, Rest>
     : ParseStatements<Lexemes> extends infer R extends ResultConstraint
         ? R extends Ok<infer S extends AstStat[], EndBlockSyntax<infer Rest>> ? Ok<AstBlock<S>, Rest>
-        : Err<"expected `}` to close `{`">
+        : R
     : Inexhaustive<"ParseBlockExpression">;
+
+type ParsePrimaryExpression<Lexemes extends Lexeme[]> =
+    | ParseSimpleExpression<Lexemes> extends infer R extends ResultConstraint
+        ? R extends Ok<infer E extends AstExpr, infer Rest>
+            ? Rest extends [Operator<"(">, Operator<")">, ...infer Rest extends Lexeme[]] ? Ok<AstFnCall<E>, Rest>
+            : Ok<E, Rest>
+        : R
+    : Inexhaustive<"ParsePrimaryExpression">;
 
 type ParseSimpleExpression<Lexemes extends Lexeme[]> =
     | Lexemes extends StringExpressionSyntax<infer S, infer Rest> ? Ok<AstStringExpr<S>, Rest>
     : Lexemes extends BooleanExpressionSyntax<infer B, infer Rest> ? Ok<AstBooleanExpr<B>, Rest>
     : Lexemes extends NumberExpressionSyntax<infer N, infer Rest> ? Ok<AstNumberExpr<N>, Rest>
-    : Lexemes extends IndentifierSyntax<infer N, infer Rest> ? Ok<AstIdentifierExpr<N>, Rest>
+    : Lexemes extends IdentifierSyntax<infer N, infer Rest> ? Ok<AstIdentifierExpr<N>, Rest>
     : Lexemes extends BeginGroupExpressionSyntax<infer Rest> ? ParseGroupExpression<Rest>
     : Lexemes extends IfExpressionCond<infer Rest> ? ParseIfExpression<Rest>
     : Lexemes extends BeginBlockSyntax<infer Rest> ? ParseBlockExpression<Rest>
@@ -55,9 +63,9 @@ type ParseSimpleExpression<Lexemes extends Lexeme[]> =
     : Err<`expected an expression, got '${Lexemes[0]["value"]}'`>;
 
 type ParseComparisonExpression<Lexemes extends Lexeme[]> =
-    | ParseSimpleExpression<Lexemes> extends infer R1 extends ResultConstraint
+    | ParsePrimaryExpression<Lexemes> extends infer R1 extends ResultConstraint
         ? R1 extends Ok<infer L extends AstExpr, BinaryEqualSyntax<infer Rest>>
-            ? ParseSimpleExpression<Rest> extends infer R2 extends ResultConstraint
+            ? ParsePrimaryExpression<Rest> extends infer R2 extends ResultConstraint
                 ? R2 extends Ok<infer R extends AstExpr, infer Rest> ? Ok<AstBinaryEqExpr<L, R>, Rest>
                 : R2
             : Inexhaustive<"ParseBinaryExpression: == <expr>">
@@ -67,7 +75,7 @@ type ParseComparisonExpression<Lexemes extends Lexeme[]> =
 type ParseExpression<Lexemes extends Lexeme[]> = ParseComparisonExpression<Lexemes>;
 
 type ParseLetStatement<Lexemes extends Lexeme[]> =
-    | Lexemes extends NameOfLetStatementSyntax<infer N, infer Rest>
+    | Lexemes extends IdentifierSyntax<infer N, infer Rest>
         ? Rest extends InitializerLetStatementSyntax<infer Rest>
             ? ParseExpression<Rest> extends infer R extends ResultConstraint
                 ? R extends Ok<infer E extends AstExpr, infer Rest> ? Ok<AstLetStat<N, E>, Rest>
@@ -88,10 +96,19 @@ type ParseReturnStatement<Lexemes extends Lexeme[]> =
         : R
     : Inexhaustive<"ParseReturnStatement">;
 
+type ParseFnStatement<N extends string, Lexemes extends Lexeme[]> =
+    | Lexemes extends BeginBlockSyntax<infer Rest>
+        ? ParseBlockStatement<Rest> extends infer R extends ResultConstraint
+            ? R extends Ok<AstExprStat<infer B extends AstBlock<AstStat[]>>, infer Rest> ? Ok<AstFnStat<N, B>, Rest>
+            : R
+        : Inexhaustive<"ParseFnStatement">
+    : Err<`fn '${N}' is missing an implementation`>;
+
 type TryParseStatement<Lexemes extends Lexeme[]> =
     | Lexemes extends LetStatementSyntax<infer Rest> ? ParseLetStatement<Rest>
     : Lexemes extends BeginBlockSyntax<infer Rest> ? ParseBlockStatement<Rest>
     : Lexemes extends ReturnStatementSyntax<infer Rest> ? ParseReturnStatement<Rest>
+    : Lexemes extends BeginFnStatementSyntax<infer N, infer Rest> ? ParseFnStatement<N, Rest>
     : Ok<AstNopStatement, Lexemes>;
 
 type ParseStatement<Lexemes extends Lexeme[]> =
@@ -116,3 +133,16 @@ export type Parse<S extends string> =
         : R extends Ice<infer E> ? `Internal error: ${E}`
         : "Internal error: Parse match is inexhaustive"
     : "Internal error: ParseStatements should return a subtype of ResultConstraint";
+
+type T = Parse<`
+    let x = 5
+
+    fn main() {
+        let x = hello_world()
+        return x
+    }
+
+    fn hello_world() {
+        return 'hello world!'
+    }
+`>;
