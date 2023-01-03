@@ -34,7 +34,7 @@ type TokenizeOne<S extends string> =
     : S extends ` ${infer Rest}` ? TokenizeOne<Rest>
     : [Eof, ""];
 
-export type Tokenize<S extends string, Lexemes extends Lexeme[] = []> =
+export type Tokenize<S extends string, Acc extends Lexeme[] = []> =
     | TokenizeOne<S> extends infer T extends [Lexeme, string]
-        ? S extends "" ? Lexemes : Tokenize<T[1], [...Lexemes, T[0]]>
+        ? S extends "" ? Acc : Tokenize<T[1], [...Acc, T[0]]>
         : never;

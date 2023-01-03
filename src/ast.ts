@@ -1,25 +1,18 @@
-type TaggedAst<T extends string, U extends string, N> = { tag: `${T}-${U}`, node: N };
-type TaggedAstExpr<T extends string, N> = TaggedAst<T, "expr", N>;
-type TaggedAstStat<T extends string, N> = TaggedAst<T, "stat", N>;
+type TaggedAst<T extends string, N extends string, Node> = { tag: T, name: N, node: Node };
+type TaggedAstExpr<T extends string, N> = TaggedAst<"expr", T, N>;
+type TaggedAstStat<T extends string, N> = TaggedAst<"stat", T, N>;
 
-export type AstNode = TaggedAst<string, string, unknown>;
+// We do this instead of a union of expression/statement types to break the circular reference.
+export type AstNode = AstExpr | AstStat;
+export type AstExpr = { tag: "expr" };
+export type AstStat = { tag: "stat" };
 
 export type AstBooleanExpr<B extends boolean> = TaggedAstExpr<"boolean", { value: B }>;
 export type AstNumberExpr<N extends number> = TaggedAstExpr<"number", { value: N }>;
-export type AstGroupExpr<N extends AstNode> = TaggedAstExpr<"group", { node: N }>
-export type AstIfExpr<C extends AstNode, T extends AstNode, F extends AstNode> = TaggedAstExpr<"if", { c: C, t: T, f: F }>
-
-export type AstExpr =
-    | AstBooleanExpr<boolean>
-    | AstNumberExpr<number>
-    | AstGroupExpr<AstNode>
-    | AstIfExpr<AstNode, AstNode, AstNode>;
+export type AstGroupExpr<N extends AstExpr> = TaggedAstExpr<"group", { node: N }>
+export type AstIfExpr<C extends AstExpr, T extends AstExpr, F extends AstExpr> = TaggedAstExpr<"if", { c: C, t: T, f: F }>
+export type AstBlock<S extends AstStat[]> = TaggedAstExpr<"block", { stats: S }>
 
 export type AstNopStatement = TaggedAstStat<"nop", null>;
 export type AstLetStat<N extends string, E extends AstExpr> = TaggedAstStat<"let", { name: N, expr: E }>;
-export type AstBlock<S extends AstStat[]> = TaggedAstStat<"block", { stats: S }>
-
-export type AstStat =
-    | AstNopStatement
-    | AstLetStat<string, AstExpr>
-    | AstBlock<AstStat[]>;
+export type AstExprStat<E extends AstExpr> = TaggedAstStat<"expression statement", { expr: E }>;
