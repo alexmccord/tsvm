@@ -14,6 +14,7 @@ export type AstGroupExpr<N extends AstExpr> = TaggedAstExpr<"group", { node: N }
 export type AstIfExpr<C extends AstExpr, T extends AstExpr, F extends AstExpr> = TaggedAstExpr<"if", { c: C, t: T, f: F }>
 export type AstBlock<S extends AstStat[]> = TaggedAstExpr<"block", { stats: S }>
 export type AstIdentifierExpr<N extends string> = TaggedAstExpr<"identifier", { name: N }>;
+export type AstBinaryEqExpr<L extends AstExpr, R extends AstExpr> = TaggedAstExpr<"eq", { left: L, right: R }>;
 
 export type AstNopStatement = TaggedAstStat<"nop", null>;
 export type AstLetStat<N extends string, E extends AstExpr> = TaggedAstStat<"let", { name: N, expr: E }>;

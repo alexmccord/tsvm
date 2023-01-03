@@ -1,6 +1,6 @@
-import { AstBlock, AstBooleanExpr, AstExpr, AstExprStat, AstGroupExpr, AstIdentifierExpr, AstIfExpr, AstLetStat, AstNode, AstNopStatement, AstNumberExpr, AstReturnStat, AstStat, AstStringExpr } from "./ast";
+import { AstBinaryEqExpr, AstBlock, AstBooleanExpr, AstExpr, AstExprStat, AstGroupExpr, AstIdentifierExpr, AstIfExpr, AstLetStat, AstNode, AstNopStatement, AstNumberExpr, AstReturnStat, AstStat, AstStringExpr } from "./ast";
 import { Eof, Lexeme, Tokenize } from "./lexer"
-import { BooleanExpressionSyntax, BeginGroupExpressionSyntax, EndGroupExpressionSyntax, IfExpressionCond, IfExpressionThen, IfExpressionElse, BeginBlockSyntax, EndBlockSyntax, LetStatementSyntax, NameOfLetStatementSyntax, InitializerLetStatementSyntax, ReturnStatementSyntax, IndentifierSyntax, NumberExpressionSyntax, StringExpressionSyntax } from "./syntax";
+import { BooleanExpressionSyntax, BeginGroupExpressionSyntax, EndGroupExpressionSyntax, IfExpressionCond, IfExpressionThen, IfExpressionElse, BeginBlockSyntax, EndBlockSyntax, LetStatementSyntax, NameOfLetStatementSyntax, InitializerLetStatementSyntax, ReturnStatementSyntax, IndentifierSyntax, NumberExpressionSyntax, StringExpressionSyntax, BinaryEqualSyntax } from "./syntax";
 
 type Ok<N extends AstNode | AstNode[], Lexemes extends Lexeme[]> = { tag: "ok", node: N, lexemes: Lexemes };
 type Err<E extends string> = { tag: "err", err: E };
@@ -43,7 +43,7 @@ type ParseBlockExpression<Lexemes extends Lexeme[]> =
         : Err<"expected `}` to close `{`">
     : Inexhaustive<"ParseBlockExpression">;
 
-type ParseExpression<Lexemes extends Lexeme[]> =
+type ParseSimpleExpression<Lexemes extends Lexeme[]> =
     | Lexemes extends StringExpressionSyntax<infer S, infer Rest> ? Ok<AstStringExpr<S>, Rest>
     : Lexemes extends BooleanExpressionSyntax<infer B, infer Rest> ? Ok<AstBooleanExpr<B>, Rest>
     : Lexemes extends NumberExpressionSyntax<infer N, infer Rest> ? Ok<AstNumberExpr<N>, Rest>
@@ -54,14 +54,27 @@ type ParseExpression<Lexemes extends Lexeme[]> =
     : Lexemes extends [Eof] ? Err<"expected an expression, got end of file">
     : Err<`expected an expression, got '${Lexemes[0]["value"]}'`>;
 
+type ParseComparisonExpression<Lexemes extends Lexeme[]> =
+    | ParseSimpleExpression<Lexemes> extends infer R1 extends ResultConstraint
+        ? R1 extends Ok<infer L extends AstExpr, BinaryEqualSyntax<infer Rest>>
+            ? ParseSimpleExpression<Rest> extends infer R2 extends ResultConstraint
+                ? R2 extends Ok<infer R extends AstExpr, infer Rest> ? Ok<AstBinaryEqExpr<L, R>, Rest>
+                : R2
+            : Inexhaustive<"ParseBinaryExpression: == <expr>">
+        : R1
+    : Inexhaustive<"ParseBinaryExpression: <expr> <bin-op>">;
+
+type ParseExpression<Lexemes extends Lexeme[]> = ParseComparisonExpression<Lexemes>;
+
 type ParseLetStatement<Lexemes extends Lexeme[]> =
     | Lexemes extends NameOfLetStatementSyntax<infer N, infer Rest>
         ? Rest extends InitializerLetStatementSyntax<infer Rest>
             ? ParseExpression<Rest> extends infer R extends ResultConstraint
-                ? R extends Ok<infer E extends AstExpr, infer Rest> ? Ok<AstLetStat<N, E>, Rest> : R
-                : Inexhaustive<"ParseExpression">
-            : Err<"expected `=` to come after the name">
-        : Err<"expected a name to come after the 'let' keyword">;
+                ? R extends Ok<infer E extends AstExpr, infer Rest> ? Ok<AstLetStat<N, E>, Rest>
+                : R
+            : Inexhaustive<"ParseExpression">
+        : Err<"expected `=` to come after the name">
+    : Err<"expected a name to come after the 'let' keyword">;
 
 type ParseBlockStatement<Lexemes extends Lexeme[]> =
     | ParseBlockExpression<Lexemes> extends infer R extends ResultConstraint
@@ -97,7 +110,8 @@ type ParseStatements<Lexemes extends Lexeme[], Acc extends AstStat[] = []> =
 
 export type Parse<S extends string> =
     | ParseStatements<Tokenize<S>> extends infer R extends ResultConstraint
-        ? R extends Ok<infer N, infer _> ? N
+        ? R extends Ok<infer N, [] | [Eof]> ? N
+        : R extends Ok<infer _, [infer L extends Lexeme, ...Lexeme[]]> ? `unknown token '${L["value"]}' when parsing a statement`
         : R extends Err<infer E> ? E
         : R extends Ice<infer E> ? `Internal error: ${E}`
         : "Internal error: Parse match is inexhaustive"
