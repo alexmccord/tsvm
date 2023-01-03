@@ -4,6 +4,7 @@ export type Lexeme = TaggedLexeme<string, string>;
 export type Keyword<V extends string> = TaggedLexeme<"keyword", V>;
 export type Operator<V extends string> = TaggedLexeme<"operator", V>;
 export type Identifier<V extends string> = TaggedLexeme<"identifier", V>;
+export type Eof = TaggedLexeme<"special", "<end of file>">;
 
 type Alphabet =
     | "a" | "b" | "c" | "d" | "e" | "f" | "g" | "h" | "i" | "j" | "k" | "l" | "m"
@@ -27,9 +28,11 @@ type TokenizeOne<S extends string> =
     : S extends `.${infer Rest}` ? [Operator<".">, Rest]
     : S extends `(${infer Rest}` ? [Operator<"(">, Rest]
     : S extends `)${infer Rest}` ? [Operator<")">, Rest]
+    : S extends `{${infer Rest}` ? [Operator<"{">, Rest]
+    : S extends `}${infer Rest}` ? [Operator<"}">, Rest]
     : S extends `${infer L extends Alphabet | '_'}${infer Rest}` ? TokenizeIdentifier<L, Rest>
     : S extends ` ${infer Rest}` ? TokenizeOne<Rest>
-    : never;
+    : [Eof, ""];
 
 export type Tokenize<S extends string, Lexemes extends Lexeme[] = []> =
     | TokenizeOne<S> extends infer T extends [Lexeme, string]

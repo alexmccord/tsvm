@@ -15,7 +15,11 @@ export type AstExpr =
     | AstGroupExpr<AstNode>
     | AstIfExpr<AstNode, AstNode, AstNode>;
 
+export type AstNopStatement = TaggedAstStat<"nop", null>;
 export type AstLetStat<N extends string, E extends AstExpr> = TaggedAstStat<"let", { name: N, expr: E }>;
+export type AstBlock<S extends AstStat[]> = TaggedAstStat<"block", { stats: S }>
 
 export type AstStat =
-    | AstLetStat<string, AstExpr>;
+    | AstNopStatement
+    | AstLetStat<string, AstExpr>
+    | AstBlock<AstStat[]>;

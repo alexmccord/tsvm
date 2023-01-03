@@ -1,39 +1,75 @@
-import { AstBooleanExpr, AstExpr, AstGroupExpr, AstIfExpr, AstLetStat, AstStat } from "./ast";
-import { Lexeme, Tokenize } from "./lexer"
-import { BooleanExpressionSyntax, BeginGroupExpressionSyntax, LetStatementSyntax, EndGroupExpressionSyntax, IfExpressionCond, IfExpressionThen, IfExpressionElse } from "./syntax";
+import { AstBlock, AstBooleanExpr, AstExpr, AstGroupExpr, AstIfExpr, AstLetStat, AstNode, AstNopStatement, AstStat } from "./ast";
+import { Eof, Identifier, Keyword, Lexeme, Operator, Tokenize } from "./lexer"
+import { BooleanExpressionSyntax, BeginGroupExpressionSyntax, EndGroupExpressionSyntax, IfExpressionCond, IfExpressionThen, IfExpressionElse, BeginBlockSyntax, EndBlockSyntax, LetStatementSyntax, NameOfLetStatementSyntax, InitializerLetStatementSyntax } from "./syntax";
+
+type Ok<N extends AstNode | AstNode[], Lexemes extends Lexeme[]> = { tag: "ok", node: N, lexemes: Lexemes };
+type Err<E extends string> = { tag: "err", err: E };
+type Ice<E extends string> = { tag: "ice", err: E }; // Internal compiler error.
+type Inexhaustive<N extends string> = Ice<`${N} match was inexhaustive!`>;
+type Result<N extends AstNode | AstNode[], Lexemes extends Lexeme[], E extends string> =
+    | Ok<N, Lexemes>
+    | Err<E>
+    | Ice<E>;
+type ResultConstraint = Result<AstNode | AstNode[], Lexeme[], string>;
 
 type ParseGroupExpression<Lexemes extends Lexeme[]> =
-    | ParseExpression<Lexemes> extends [infer E extends AstExpr, EndGroupExpressionSyntax<infer Rest>]
-        ? [AstGroupExpr<E>, Rest]
-        : never;
+    | ParseExpression<Lexemes> extends infer R extends ResultConstraint
+        ? R extends Ok<infer E extends AstExpr, EndGroupExpressionSyntax<infer Rest>> ? Ok<AstGroupExpr<E>, Rest>
+        : R extends Ok<AstExpr, Lexeme[]> ? Err<`expected ) to close (`>
+        : R
+    : Inexhaustive<"ParseGroupExpression">;
 
-type ParseIfExpression<CondRest extends Lexeme[]> =
-    | ParseExpression<CondRest> extends [infer C extends AstExpr, IfExpressionThen<infer ThenRest>]
-        ? ParseExpression<ThenRest> extends [infer T extends AstExpr, IfExpressionElse<infer ElseRest>]
-            ? ParseExpression<ElseRest> extends [infer E extends AstExpr, infer Rest]
-                ? [AstIfExpr<C, T, E>, Rest]
-                : never
-            : never
-        : never;
+// TODO: rewrite this one to be cleaner when possible
+type ParseIfExpression<Lexemes extends Lexeme[]> =
+    // | MatchParseOrReport<ParseExpression<Lexemes>, IfExpressionThen<>, Err<"expected `then`">> extends
+    | ParseExpression<Lexemes> extends infer R1 extends ResultConstraint
+        ? R1 extends Ok<infer C extends AstExpr, IfExpressionThen<infer Rest>>
+            ? ParseExpression<Rest> extends infer R2 extends ResultConstraint
+                ? R2 extends Ok<infer T extends AstExpr, IfExpressionElse<infer Rest>>
+                    ? ParseExpression<Rest> extends infer R3 extends ResultConstraint
+                        ? R3 extends Ok<infer F extends AstExpr, infer Rest> ? Ok<AstIfExpr<C, T, F>, Rest>
+                        : R3
+                    : Inexhaustive<"ParseIfExpression: else <expr>">
+                : R2 extends Ok<AstExpr, Lexeme[]> ? Err<"expected `else`">
+                : R2
+            : Inexhaustive<"ParseIfExpression: then <expr>">
+        : R1 extends Ok<AstExpr, Lexeme[]> ? Err<"expected `then`">
+        : R1
+    : Inexhaustive<"ParseIfExpression: if <expr>">;
 
 type ParseExpression<Lexemes extends Lexeme[]> =
-    | Lexemes extends BooleanExpressionSyntax<infer B, infer Rest> ? [AstBooleanExpr<B>, Rest]
+    | Lexemes extends BooleanExpressionSyntax<infer B, infer Rest> ? Ok<AstBooleanExpr<B>, Rest>
     : Lexemes extends BeginGroupExpressionSyntax<infer Rest> ? ParseGroupExpression<Rest>
     : Lexemes extends IfExpressionCond<infer Rest> ? ParseIfExpression<Rest>
-    : never;
+    : Lexemes extends [Eof] ? Err<"expected an expression, got end of file">
+    : Err<`expected an expression, got '${Lexemes[0]["value"]}'`>;
 
-type ParseLetStatement<N extends string, Lexemes extends Lexeme[]> =
-    | ParseExpression<Lexemes> extends [infer E extends AstExpr, infer Rest extends Lexeme[]]
-        ? [AstLetStat<N, E>, Rest]
-        : never;
+type ParseLetStatement<Lexemes extends Lexeme[]> =
+    | Lexemes extends NameOfLetStatementSyntax<infer N, infer Rest>
+        ? Rest extends InitializerLetStatementSyntax<infer Rest>
+            ? ParseExpression<Rest> extends infer R extends ResultConstraint
+                ? R extends Ok<infer E extends AstExpr, infer Rest> ? Ok<AstLetStat<N, E>, Rest> : R
+                : Inexhaustive<"ParseExpression">
+            : Err<"expected `=` to come after the name">
+        : Err<"expected a name to come after the 'let' keyword">;
 
 type ParseStatement<Lexemes extends Lexeme[]> =
-    | Lexemes extends LetStatementSyntax<infer N, infer Rest> ? ParseLetStatement<N, Rest>
-    : never;
+    | Lexemes extends LetStatementSyntax<infer Rest> ? ParseLetStatement<Rest>
+    : Lexemes extends [Eof] ? Ok<AstNopStatement, [Eof]>
+    : Err<`unknown token '${Lexemes[0]["value"]}' when parsing a statement`>;
 
-type ParseBlock<Lexemes extends Lexeme[], ParsedStats extends AstStat[] = []> =
-    | Lexemes extends [] ? ParsedStats
-    : ParseStatement<Lexemes> extends [infer S extends AstStat, infer Rest extends Lexeme[]] ? ParseBlock<Rest, [...ParsedStats, S]>
-    : never;
+type ParseStatements<Lexemes extends Lexeme[], Acc extends AstStat[] = []> =
+    | Lexemes extends [] ? Ok<Acc, Lexemes>
+    : ParseStatement<Lexemes> extends infer R extends ResultConstraint
+        ? R extends Ok<infer N extends AstStat, infer Rest> ? ParseStatements<Rest, [...Acc, N]> : R
+    : Ice<"ParseStatement should've returned a subtype of ResultConstraint">;
 
-export type Parse<S extends string> = ParseBlock<Tokenize<S>>;
+export type Parse<S extends string> =
+    | ParseStatements<Tokenize<S>> extends infer R extends ResultConstraint
+        ? R extends Ok<infer N, infer _> ? N
+        : R extends Err<infer E> ? E
+        : R extends Ice<infer E> ? `Internal error: ${E}`
+        : "Internal error: Parse match is inexhaustive"
+    : "Internal error: ParseStatements should return a subtype of ResultConstraint";
+
+type T = Parse<"let x = true">;
