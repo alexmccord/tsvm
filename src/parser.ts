@@ -1,6 +1,6 @@
 import { AstBinaryEqExpr, AstBlock, AstBooleanExpr, AstExpr, AstExprStat, AstFnCall, AstFnStat, AstGroupExpr, AstIdentifierExpr, AstIfExpr, AstLetStat, AstNode, AstNopStatement, AstNumberExpr, AstReturnStat, AstStat, AstStringExpr } from "./ast";
-import { Eof, Identifier, Lexeme, Operator, Tokenize } from "./lexer"
-import { BooleanExpressionSyntax, BeginGroupExpressionSyntax, EndGroupExpressionSyntax, IfExpressionCond, IfExpressionThen, IfExpressionElse, BeginBlockSyntax, EndBlockSyntax, LetStatementSyntax, InitializerLetStatementSyntax, ReturnStatementSyntax, IdentifierSyntax as IdentifierSyntax, NumberExpressionSyntax, StringExpressionSyntax, BinaryEqualSyntax, BeginFnStatementSyntax } from "./syntax";
+import { Eof, Lexeme, Operator, Tokenize } from "./lexer"
+import { BooleanExpressionSyntax, BeginGroupExpressionSyntax, EndGroupExpressionSyntax, IfExpressionCond, IfExpressionThen, IfExpressionElse, BeginBlockSyntax, EndBlockSyntax, LetStatementSyntax, InitializerLetStatementSyntax, ReturnStatementSyntax, IdentifierSyntax, NumberExpressionSyntax, StringExpressionSyntax, BinaryEqualSyntax, BeginFnStatementSyntax } from "./syntax";
 
 type Ok<N extends AstNode | AstNode[], Lexemes extends Lexeme[]> = { tag: "ok", node: N, lexemes: Lexemes };
 type Err<E extends string> = { tag: "err", err: E };

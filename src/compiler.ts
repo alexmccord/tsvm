@@ -1,2 +1,4 @@
+import { AstStat } from "./ast";
+
 // TODO
-export type MakeMeAModule = void;
+export type Compile<A extends AstStat[]> = [];
